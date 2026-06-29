@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.angular/
+.ionic/
+.turbo/
+package-lock.json
+.env
+.env.*
+!.env.example
+coverage/
+tmp/
+*.log
+
+# Supabase local state and CLI artifacts
+supabase/.branches/
+supabase/.temp/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

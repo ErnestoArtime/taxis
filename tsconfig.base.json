@@ -1,0 +1,23 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@taxi/domain": ["packages/domain/src/public-api.ts"],
+      "@taxi/supabase": ["packages/supabase/src/public-api.ts"],
+      "@taxi/ui": ["packages/ui/src/public-api.ts"],
+      "@taxi/config": ["packages/config/src/public-api.ts"],
+      "@taxi/auth": ["packages/auth/src/public-api.ts"]
+    },
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"]
+  }
+}

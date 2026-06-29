@@ -1,0 +1,36 @@
+{
+  "name": "taxi-commerce-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo Ionic Angular para clientes, choferes y administracion de una plataforma comercializable de taxis.",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "start:customer": "pnpm --filter @taxi/app-customer start",
+    "start:driver": "pnpm --filter @taxi/app-driver start",
+    "start:admin": "pnpm --filter @taxi/app-admin start",
+    "build:customer": "pnpm --filter @taxi/app-customer build",
+    "build:driver": "pnpm --filter @taxi/app-driver build",
+    "build:admin": "pnpm --filter @taxi/app-admin build",
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
+  },
+  "dependencies": {
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
+    "@angular/platform-browser": "^20.0.0",
+    "@angular/router": "^20.0.0",
+    "@ionic/angular": "^8.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "rxjs": "^7.8.0",
+    "zone.js": "^0.15.0"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^20.0.0",
+    "@angular/cli": "^20.0.0",
+    "@ionic/cli": "^7.2.0",
+    "typescript": "^5.8.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "defaultProject": "customer",
+  "projects": {
+    "customer": {
+      "name": "Taxi Cliente",
+      "type": "angular",
+      "root": "apps/customer"
+    },
+    "driver": {
+      "name": "Taxi Chofer",
+      "type": "angular",
+      "root": "apps/driver"
+    },
+    "admin": {
+      "name": "Taxi Admin",
+      "type": "angular",
+      "root": "apps/admin"
+    }
+  }
+}

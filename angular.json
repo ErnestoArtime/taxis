@@ -1,0 +1,82 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "apps",
+  "projects": {
+    "customer": {
+      "projectType": "application",
+      "root": "apps/customer",
+      "sourceRoot": "apps/customer/src",
+      "prefix": "taxi",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/apps/customer",
+            "index": "apps/customer/src/index.html",
+            "browser": "apps/customer/src/main.ts",
+            "tsConfig": "apps/customer/tsconfig.app.json",
+            "styles": ["apps/customer/src/theme/variables.scss", "apps/customer/src/styles.scss"],
+            "assets": ["apps/customer/src/assets"]
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "customer:build"
+          }
+        }
+      }
+    },
+    "driver": {
+      "projectType": "application",
+      "root": "apps/driver",
+      "sourceRoot": "apps/driver/src",
+      "prefix": "taxi",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/apps/driver",
+            "index": "apps/driver/src/index.html",
+            "browser": "apps/driver/src/main.ts",
+            "tsConfig": "apps/driver/tsconfig.app.json",
+            "styles": ["apps/driver/src/theme/variables.scss", "apps/driver/src/styles.scss"],
+            "assets": ["apps/driver/src/assets"]
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "driver:build"
+          }
+        }
+      }
+    },
+    "admin": {
+      "projectType": "application",
+      "root": "apps/admin",
+      "sourceRoot": "apps/admin/src",
+      "prefix": "taxi",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/apps/admin",
+            "index": "apps/admin/src/index.html",
+            "browser": "apps/admin/src/main.ts",
+            "tsConfig": "apps/admin/tsconfig.app.json",
+            "styles": ["apps/admin/src/theme/variables.scss", "apps/admin/src/styles.scss"],
+            "assets": ["apps/admin/src/assets"]
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "admin:build"
+          }
+        }
+      }
+    }
+  }
+}
