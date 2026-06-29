@@ -1,0 +1,22 @@
+{
+  "name": "@taxi/app-customer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "ionic serve --project customer",
+    "build": "ng build customer",
+    "lint": "ng lint customer",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit"
+  },
+  "dependencies": {
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
+    "@angular/router": "^20.0.0",
+    "@ionic/angular": "^8.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "@taxi/auth": "workspace:*",
+    "rxjs": "^7.8.0"
+  }
+}
