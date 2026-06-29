@@ -1,0 +1,14 @@
+{
+  "name": "@taxi/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/public-api.ts",
+  "dependencies": {
+    "@taxi/supabase": "workspace:*"
+  },
+  "peerDependencies": {
+    "@angular/core": "^20.0.0",
+    "@angular/router": "^20.0.0"
+  }
+}
