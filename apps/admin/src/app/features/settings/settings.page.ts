@@ -110,6 +110,23 @@ export class SettingsPage implements OnInit {
         primaryColor: tenant['primary_color'] as string
       };
     }
+
+    const client = this.auth.client;
+    const { data: flags } = await client
+      .from('tenant_feature_flags')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .single();
+
+    if (flags) {
+      this.featureFlags = {
+        realtimeTracking: flags['realtime_tracking'] as boolean,
+        driverQuotes: flags['driver_quotes'] as boolean,
+        scheduledBookings: flags['scheduled_bookings'] as boolean,
+        promoCodes: flags['promo_codes'] as boolean,
+        whatsappNotifications: flags['whatsapp_notifications'] as boolean
+      };
+    }
   }
 
   async save(): Promise<void> {
@@ -129,6 +146,10 @@ export class SettingsPage implements OnInit {
       primary_color: this.branding.primaryColor
     });
 
+    if (!error) {
+      await this.saveFeatureFlags(tenantId);
+    }
+
     this.loading = false;
 
     if (error) {
@@ -137,5 +158,17 @@ export class SettingsPage implements OnInit {
     }
 
     this.saved = true;
+  }
+
+  private async saveFeatureFlags(tenantId: string): Promise<void> {
+    const client = this.auth.client;
+    await client.from('tenant_feature_flags').upsert({
+      tenant_id: tenantId,
+      realtime_tracking: this.featureFlags.realtimeTracking,
+      driver_quotes: this.featureFlags.driverQuotes,
+      scheduled_bookings: this.featureFlags.scheduledBookings,
+      promo_codes: this.featureFlags.promoCodes,
+      whatsapp_notifications: this.featureFlags.whatsappNotifications
+    }, { onConflict: 'tenant_id' });
   }
 }

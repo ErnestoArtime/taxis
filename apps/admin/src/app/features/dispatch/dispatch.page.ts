@@ -2,40 +2,21 @@ import { Component, inject, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonBadge,
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonNote,
-  IonSelect,
-  IonSelectOption,
-  IonTitle,
-  IonToolbar
+  IonBadge, IonButton, IonContent, IonHeader, IonItem, IonLabel,
+  IonList, IonNote, IonRadio, IonRadioGroup, IonSelect, IonSelectOption,
+  IonTitle, IonToolbar, IonSegment, IonSegmentButton
 } from '@ionic/angular/standalone';
 import { TaxiAuthService } from '@taxi/auth';
 import { OperationsRepository, DriversRepository, NotificationsRepository } from '@taxi/supabase';
 import type { RideRequest } from '@taxi/domain';
+import { selectBestDriver, type NearbyDriver } from '@taxi/domain';
 
 @Component({
   standalone: true,
   imports: [
-    DatePipe,
-    FormsModule,
-    IonBadge,
-    IonButton,
-    IonContent,
-    IonHeader,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonNote,
-    IonSelect,
-    IonSelectOption,
-    IonTitle,
-    IonToolbar
+    DatePipe, FormsModule, IonBadge, IonButton, IonContent, IonHeader,
+    IonItem, IonLabel, IonList, IonNote, IonRadio, IonRadioGroup,
+    IonSelect, IonSelectOption, IonTitle, IonToolbar, IonSegment, IonSegmentButton
   ],
   template: `
     <ion-header>
@@ -44,33 +25,90 @@ import type { RideRequest } from '@taxi/domain';
       </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding">
-      <h1>Asignacion de viajes</h1>
+      <ion-segment [(ngModel)]="mode">
+        <ion-segment-button value="manual">Manual</ion-segment-button>
+        <ion-segment-button value="auto">Auto-asignar</ion-segment-button>
+      </ion-segment>
 
-      <ion-list>
-        <ion-item *ngFor="let ride of unassignedRides">
-          <ion-label>
-            <h2>{{ ride.pickup_address }} -> {{ ride.dropoff_address ?? 'Sin destino' }}</h2>
-            <p>{{ ride.pickup_at | date:'short' }} - {{ ride.passenger_count }} pasajeros</p>
-          </ion-label>
-          <ion-badge color="warning">Pendiente</ion-badge>
+      <!-- Manual mode -->
+      <ng-container *ngIf="mode === 'manual'">
+        <h1>Asignacion manual</h1>
+
+        <ion-list *ngIf="unassignedRides.length > 0; else noRides">
+          <ion-radio-group [(ngModel)]="selectedRideId">
+            <ion-item *ngFor="let ride of unassignedRides">
+              <ion-radio [value]="ride.id" slot="start"></ion-radio>
+              <ion-label>
+                <h2>{{ ride.pickup_address }} -> {{ ride.dropoff_address ?? 'Sin destino' }}</h2>
+                <p>{{ ride.pickup_at | date:'short' }} - {{ ride.passenger_count }} pasajeros</p>
+              </ion-label>
+              <ion-badge color="warning">Pendiente</ion-badge>
+            </ion-item>
+          </ion-radio-group>
+        </ion-list>
+
+        <ng-template #noRides>
+          <p class="empty">No hay viajes pendientes</p>
+        </ng-template>
+
+        <ion-item *ngIf="unassignedRides.length > 0 && selectedRideId">
+          <ion-select label="Chofer" labelPlacement="stacked" [(ngModel)]="selectedDriverId">
+            <ion-select-option *ngFor="let driver of availableDrivers" [value]="driver.id">
+              {{ driver.displayName }} - {{ driver.rating }} estrellas
+            </ion-select-option>
+          </ion-select>
         </ion-item>
-      </ion-list>
 
-      <ion-item *ngIf="unassignedRides.length > 0">
-        <ion-select label="Chofer" labelPlacement="stacked" [(ngModel)]="selectedDriverId">
-          <ion-select-option *ngFor="let driver of availableDrivers" [value]="driver.id">
-            {{ driver.displayName }} - {{ driver.rating }} estrellas
-          </ion-select-option>
-        </ion-select>
-      </ion-item>
+        <ion-note *ngIf="error" color="danger">{{ error }}</ion-note>
 
-      <ion-note *ngIf="error" color="danger">{{ error }}</ion-note>
+        <ion-button expand="block" (click)="assignDriver()"
+          [disabled]="!selectedRideId || !selectedDriverId || loading">
+          {{ loading ? 'Asignando...' : 'Asignar y notificar' }}
+        </ion-button>
+      </ng-container>
 
-      <ion-button expand="block" (click)="assignDriver()" [disabled]="!selectedDriverId || loading">
-        {{ loading ? 'Asignando...' : 'Asignar y notificar' }}
-      </ion-button>
+      <!-- Auto mode -->
+      <ng-container *ngIf="mode === 'auto'">
+        <h1>Auto-asignacion por proximidad</h1>
+
+        <ion-list *ngIf="unassignedRides.length > 0; else noAutoRides">
+          <ion-radio-group [(ngModel)]="selectedRideId">
+            <ion-item *ngFor="let ride of unassignedRides">
+              <ion-radio [value]="ride.id" slot="start"></ion-radio>
+              <ion-label>
+                <h2>{{ ride.pickup_address }} -> {{ ride.dropoff_address ?? 'Sin destino' }}</h2>
+                <p>{{ ride.pickup_at | date:'short' }}</p>
+              </ion-label>
+            </ion-item>
+          </ion-radio-group>
+        </ion-list>
+
+        <ng-template #noAutoRides>
+          <p class="empty">No hay viajes para auto-asignar</p>
+        </ng-template>
+
+        <ion-list *ngIf="nearbyDrivers.length > 0">
+          <ion-item *ngFor="let d of nearbyDrivers">
+            <ion-label>
+              <h2>{{ d.displayName }}</h2>
+              <p>{{ d.distanceKm }} km · {{ d.rating }} estrellas · {{ d.vehiclePlate || 'Sin vehiculo' }}</p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <ion-note *ngIf="error" color="danger">{{ error }}</ion-note>
+        <ion-note *ngIf="autoResult" color="success">{{ autoResult }}</ion-note>
+
+        <ion-button expand="block" (click)="autoAssign()"
+          [disabled]="!selectedRideId || autoLoading" color="success">
+          {{ autoLoading ? 'Buscando chofer...' : 'Auto-asignar mejor chofer' }}
+        </ion-button>
+      </ng-container>
     </ion-content>
-  `
+  `,
+  styles: [`
+    .empty { text-align: center; color: var(--ion-color-medium); padding: 32px 0; }
+  `]
 })
 export class DispatchPage implements OnInit {
   private auth = inject(TaxiAuthService);
@@ -78,11 +116,16 @@ export class DispatchPage implements OnInit {
   private driversRepo = inject(DriversRepository);
   private notificationsRepo = inject(NotificationsRepository);
 
+  mode: 'manual' | 'auto' = 'manual';
   unassignedRides: RideRequest[] = [];
   availableDrivers: Array<{ id: string; displayName: string; rating: number }> = [];
+  nearbyDrivers: NearbyDriver[] = [];
+  selectedRideId = '';
   selectedDriverId = '';
   loading = false;
+  autoLoading = false;
   error = '';
+  autoResult = '';
 
   ngOnInit(): void {
     this.loadData();
@@ -90,9 +133,7 @@ export class DispatchPage implements OnInit {
 
   private async loadData(): Promise<void> {
     const tenantId = this.auth.tenantId;
-    if (!tenantId) {
-      return;
-    }
+    if (!tenantId) return;
 
     const [ridesResult, driversResult] = await Promise.all([
       this.operationsRepo.listOpenRides(tenantId),
@@ -119,23 +160,18 @@ export class DispatchPage implements OnInit {
   async assignDriver(): Promise<void> {
     const tenantId = this.auth.tenantId;
     const actorId = this.auth.userId;
-    const selectedRide = this.unassignedRides[0];
 
-    if (!tenantId || !actorId || !selectedRide) {
+    if (!tenantId || !actorId || !this.selectedRideId || !this.selectedDriverId) {
+      this.error = 'Selecciona un viaje y un chofer.';
       return;
     }
 
     this.loading = true;
     this.error = '';
 
-    const vehicle = selectedRide.vehicle_id;
-
     const { error } = await this.operationsRepo.assignDriver({
-      tenantId,
-      rideRequestId: selectedRide.id,
-      driverId: this.selectedDriverId,
-      vehicleId: vehicle ?? undefined,
-      actorId
+      tenantId, rideRequestId: this.selectedRideId,
+      driverId: this.selectedDriverId, actorId
     });
 
     if (error) {
@@ -152,15 +188,50 @@ export class DispatchPage implements OnInit {
       .single();
 
     if (driverRecord) {
-      await this.notificationsRepo.notifyDriverAssigned(
-        tenantId,
-        driverRecord['profile_id'] as string,
-        selectedRide.id,
-        selectedRide.pickup_address
-      );
+      const selectedRide = this.unassignedRides.find(r => r.id === this.selectedRideId);
+      if (selectedRide) {
+        await this.notificationsRepo.notifyDriverAssigned(
+          tenantId, driverRecord['profile_id'] as string,
+          selectedRide.id, selectedRide.pickup_address
+        );
+      }
     }
 
     this.loading = false;
+    this.selectedRideId = '';
+    this.selectedDriverId = '';
     this.loadData();
+  }
+
+  async autoAssign(): Promise<void> {
+    const userId = this.auth.userId;
+    if (!this.selectedRideId || !userId) return;
+
+    this.autoLoading = true;
+    this.error = '';
+    this.autoResult = '';
+    this.nearbyDrivers = [];
+
+    const client = this.auth.client;
+    const { data, error } = await client.rpc('auto_assign_driver', {
+      target_ride_request_id: this.selectedRideId,
+      actor_profile_id: userId
+    });
+
+    this.autoLoading = false;
+
+    if (error) {
+      this.error = error.message;
+      return;
+    }
+
+    const result = data as Record<string, unknown>;
+    if (result['success']) {
+      this.autoResult = `Chofer asignado: ${result['driver_name']} (${result['distance_km']} km, ${result['vehicle_plate'] || 'sin vehiculo'})`;
+      this.selectedRideId = '';
+      this.loadData();
+    } else {
+      this.error = (result['error'] as string) ?? 'Error al auto-asignar';
+    }
   }
 }

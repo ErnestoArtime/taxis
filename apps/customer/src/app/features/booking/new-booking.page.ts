@@ -135,15 +135,15 @@ export class NewBookingPage implements OnInit {
 
   async estimatePrice(): Promise<void> {
     const tenantId = this.auth.tenantId;
-    if (!tenantId) {
+    if (!tenantId || !this.pickupAddress) {
       return;
     }
 
     const { data } = await this.pricingRepo.estimate({
       tenantId,
       vehicleClassId: this.vehicleClassId || undefined,
-      distanceKm: 10,
-      durationMinutes: 25,
+      distanceKm: undefined,
+      durationMinutes: undefined,
       pickupAt: this.pickupAt || new Date().toISOString()
     });
 
@@ -170,8 +170,7 @@ export class NewBookingPage implements OnInit {
       dropoffAddress: this.dropoffAddress || undefined,
       pickupAt: this.pickupAt || new Date().toISOString(),
       passengerCount: this.passengerCount,
-      estimatedDistanceKm: 10,
-      estimatedDurationMinutes: 25
+      notes: `${this.pickupAddress} → ${this.dropoffAddress || 'Sin destino'}`
     });
 
     this.loading = false;

@@ -14,6 +14,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 54322:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,8 +47,48 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck workspaces
+      - name: Check formatting
+        run: npx prettier --check "packages/**/*.ts" "apps/*/src/**/*.ts" "*.json" "*.yaml"
+        continue-on-error: true
+
+      - name: Lint
+        run: npx eslint "packages/**/*.ts" "apps/*/src/**/*.ts" --max-warnings 0
+        continue-on-error: true
+
+      - name: Typecheck
         run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:domain
 
       - name: Build applications
         run: pnpm build
+
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    needs: [validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build applications
+        run: pnpm build
+
+      - name: Deploy to staging (placeholder)
+        run: echo "Deploy to staging environment — configure your hosting provider here"

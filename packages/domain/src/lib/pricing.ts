@@ -14,8 +14,9 @@ export interface TariffRule {
   serviceAreaId?: string;
   vehicleClassId?: string;
   kind: TariffRuleKind;
+  label: string;
   amount: number;
-  currency: 'CUP' | 'USD' | 'EUR';
+  currency: string;
   priority: number;
   startsAt?: string;
   endsAt?: string;
@@ -32,7 +33,7 @@ export interface PriceEstimateRequest {
 }
 
 export interface PriceEstimate {
-  currency: 'CUP' | 'USD' | 'EUR';
+  currency: string;
   subtotal: number;
   minimumApplied: boolean;
   breakdown: Array<{

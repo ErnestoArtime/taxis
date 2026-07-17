@@ -14,6 +14,7 @@
     "build": "pnpm -r --if-present build",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
+    "test:domain": "pnpm --filter @taxi/domain test",
     "typecheck": "pnpm -r --if-present typecheck"
   },
   "dependencies": {

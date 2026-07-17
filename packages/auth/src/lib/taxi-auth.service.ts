@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { createTaxiSupabaseClient, TaxiSupabaseClient } from '@taxi/supabase';
+import { createTaxiSupabaseClient, TaxiSupabaseClient, TenantsRepository } from '@taxi/supabase';
 import { TAXI_AUTH_CONFIG, TaxiAuthConfig } from './taxi-auth.config';
 
 export interface AuthUser {
@@ -26,6 +26,7 @@ export class TaxiAuthService {
     this.config.supabaseUrl,
     this.config.supabasePublishableKey
   );
+  private tenantsRepo = new TenantsRepository(this.supabase);
 
   private initPromise?: Promise<void>;
   private currentUserSubject = new BehaviorSubject<AuthUser | null>(null);
@@ -86,8 +87,16 @@ export class TaxiAuthService {
   async signUpWithEmail(
     email: string,
     password: string,
-    profile: { displayName: string; phone?: string; tenantId: string }
+    profile: { displayName: string; phone?: string }
   ): Promise<{ error?: string }> {
+    const tenantSlug = this.config.tenantSlug;
+    const { data: tenantData, error: tenantError } = await this.tenantsRepo.getBrandingBySlug(tenantSlug);
+    if (tenantError || !tenantData) {
+      return { error: 'Tenant no encontrado o inactivo.' };
+    }
+
+    const tenantId = (tenantData as Record<string, unknown>)['tenant_id'] as string;
+
     const { data, error } = await this.supabase.auth.signUp({
       email,
       password,
@@ -106,7 +115,7 @@ export class TaxiAuthService {
     if (data.user) {
       const { error: profileError } = await this.supabase.from('profiles').insert({
         id: data.user.id,
-        tenant_id: profile.tenantId,
+        tenant_id: tenantId,
         role: 'customer',
         display_name: profile.displayName,
         phone: profile.phone

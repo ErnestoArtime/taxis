@@ -111,15 +111,16 @@ export class DashboardPage implements OnInit {
     const client = this.auth.client;
     const { data } = await client
       .from('drivers')
-      .select('*')
+      .select('*, profiles!inner(display_name)')
       .eq('tenant_id', tenantId)
       .eq('profile_id', userId)
       .single();
 
     if (data) {
+      const profile = data['profiles'] as Record<string, unknown> | null;
       this.driverProfile = {
         id: data['id'] as string,
-        displayName: data['profile_id'] as string,
+        displayName: (profile?.['display_name'] as string) ?? 'Chofer',
         status: data['status'] as string
       };
       this.isAvailable = data['status'] === 'active';

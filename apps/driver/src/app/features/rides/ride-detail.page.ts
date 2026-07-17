@@ -1,35 +1,15 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonSegment,
-  IonSegmentButton,
-  IonTitle,
-  IonToolbar
-} from '@ionic/angular/standalone';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonTitle, IonToolbar } from '@ionic/angular/standalone';
 import { TaxiAuthService } from '@taxi/auth';
 import { subscribeToRide } from '@taxi/supabase';
 import type { RideRequest } from '@taxi/domain';
+import { getNextStates, isActiveStatus, canTransition } from '@taxi/domain';
 
 @Component({
   standalone: true,
-  imports: [
-    IonButton,
-    IonContent,
-    IonHeader,
-    IonItem,
-    IonLabel,
-    IonList,
-    IonSegment,
-    IonSegmentButton,
-    IonTitle,
-    IonToolbar
-  ],
+  imports: [FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonTitle, IonToolbar],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -44,12 +24,19 @@ import type { RideRequest } from '@taxi/domain';
           <ion-label>
             <h2>Origen</h2>
             <p>{{ ride.pickup_address }}</p>
+            <p *ngIf="ride.pickup_reference" class="note">{{ ride.pickup_reference }}</p>
           </ion-label>
         </ion-item>
         <ion-item>
           <ion-label>
             <h2>Destino</h2>
             <p>{{ ride.dropoff_address ?? 'Sin destino' }}</p>
+          </ion-label>
+        </ion-item>
+        <ion-item *ngIf="ride.passenger_name">
+          <ion-label>
+            <h2>Pasajero</h2>
+            <p>{{ ride.passenger_name }}</p>
           </ion-label>
         </ion-item>
         <ion-item>
@@ -60,29 +47,49 @@ import type { RideRequest } from '@taxi/domain';
         </ion-item>
         <ion-item>
           <ion-label>
-            <h2>Estimado</h2>
-            <p>{{ ride.estimated_price ? 'CUP ' + ride.estimated_price : 'Pendiente' }}</p>
+            <h2>Precio</h2>
+            <p>{{ ride.final_price ? 'CUP ' + ride.final_price : (ride.estimated_price ? 'CUP ' + ride.estimated_price + ' (estimado)' : 'Por confirmar') }}</p>
           </ion-label>
         </ion-item>
       </ion-list>
 
-      <ion-segment [value]="selectedStatus" (ionChange)="updateSegment($event)">
-        <ion-segment-button value="driver_assigned">Asignado</ion-segment-button>
-        <ion-segment-button value="arriving">Llegando</ion-segment-button>
-        <ion-segment-button value="in_progress">En viaje</ion-segment-button>
-        <ion-segment-button value="completed">Completado</ion-segment-button>
-      </ion-segment>
+      <!-- Quote form for requested rides -->
+      <ion-item *ngIf="ride?.status === 'requested' || ride?.status === 'quoted'">
+        <ion-input label="Tu oferta (CUP)" labelPlacement="stacked" type="number" [(ngModel)]="quotePrice" placeholder="Precio sugerido"></ion-input>
+      </ion-item>
+      <ion-button expand="block" color="secondary" *ngIf="ride?.status === 'requested' || ride?.status === 'quoted'"
+        (click)="submitQuote()" [disabled]="!quotePrice || quoteLoading">
+        {{ quoteLoading ? 'Enviando...' : 'Enviar cotizacion' }}
+      </ion-button>
 
-      <ion-button expand="block" (click)="updateCurrentStatus()">Actualizar estado</ion-button>
+      <section class="actions" *ngIf="ride && ride.status !== 'completed' && ride.status !== 'cancelled'">
+        <ion-button expand="block" color="success" *ngIf="showAction('arriving')" (click)="transition('arriving')">
+          En camino
+        </ion-button>
+        <ion-button expand="block" color="primary" *ngIf="showAction('in_progress')" (click)="transition('in_progress')">
+          Pasajero abordo
+        </ion-button>
+        <ion-button expand="block" color="tertiary" *ngIf="showAction('completed')" (click)="transition('completed')">
+          Viaje completado
+        </ion-button>
+        <ion-button expand="block" color="danger" *ngIf="showAction('cancelled')" (click)="transition('cancelled')">
+          Cancelar viaje
+        </ion-button>
+      </section>
     </ion-content>
-  `
+  `,
+  styles: [`
+    .actions { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; }
+    .note { font-size: 12px; color: var(--ion-color-medium); }
+  `]
 })
 export class RideDetailPage implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private auth = inject(TaxiAuthService);
 
   ride: RideRequest | null = null;
-  selectedStatus = 'driver_assigned';
+  quotePrice: number | null = null;
+  quoteLoading = false;
   private channel: ReturnType<typeof subscribeToRide> | null = null;
 
   ngOnInit(): void {
@@ -102,45 +109,51 @@ export class RideDetailPage implements OnInit, OnDestroy {
       .select('*')
       .eq('id', id)
       .single();
-
     if (data) {
       this.ride = data as unknown as RideRequest;
-      this.selectedStatus = data['status'] as string;
     }
   }
 
   private subscribeToChanges(id: string): void {
     const client = this.auth.client;
-    this.channel = subscribeToRide(client, id, () => {
-      this.loadRide(id);
-    });
+    this.channel = subscribeToRide(client, id, () => this.loadRide(id));
   }
 
-  updateSegment(event: unknown): void {
-    const ev = event as { detail: { value: string } };
-    this.selectedStatus = ev.detail.value;
+  showAction(targetStatus: string): boolean {
+    if (!this.ride) return false;
+    const fromStatus = this.ride.status as Parameters<typeof canTransition>[0];
+    const toStatus = targetStatus as Parameters<typeof canTransition>[1];
+    return canTransition(fromStatus, toStatus);
   }
 
-  async updateCurrentStatus(): Promise<void> {
-    if (!this.ride) {
-      return;
-    }
-
+  async submitQuote(): Promise<void> {
+    if (!this.ride || !this.quotePrice) return;
+    this.quoteLoading = true;
     const client = this.auth.client;
-    await client
-      .from('ride_requests')
-      .update({ status: this.selectedStatus })
-      .eq('id', this.ride.id);
+    const { error } = await client.rpc('submit_driver_quote', {
+      target_ride_request_id: this.ride.id,
+      quoted_price: this.quotePrice
+    });
+    this.quoteLoading = false;
+    if (!error) {
+      this.quotePrice = null;
+    }
+  }
 
-    const actorId = this.auth.userId;
-    if (actorId) {
-      await client.from('ride_events').insert({
-        tenant_id: this.ride.tenant_id,
-        ride_request_id: this.ride.id,
-        actor_id: actorId,
-        event_type: this.selectedStatus,
-        payload: { status: this.selectedStatus }
-      });
+  async transition(newStatus: string): Promise<void> {
+    if (!this.ride) return;
+    const client = this.auth.client;
+    const userId = this.auth.userId;
+    const { error } = await client.rpc('transition_ride_state', {
+      target_ride_request_id: this.ride.id,
+      new_status: newStatus,
+      actor_profile_id: userId,
+      event_payload: {}
+    });
+
+    if (error) {
+      console.error('Error al cambiar estado:', error.message);
+      return;
     }
 
     this.loadRide(this.ride.id);
