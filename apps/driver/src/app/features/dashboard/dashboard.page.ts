@@ -109,22 +109,33 @@ export class DashboardPage implements OnInit {
     }
 
     const client = this.auth.client;
-    const { data } = await client
+
+    const { data: driverData } = await client
       .from('drivers')
-      .select('*, profiles!inner(display_name)')
+      .select('id, profiles!inner(display_name)')
       .eq('tenant_id', tenantId)
       .eq('profile_id', userId)
       .single();
 
-    if (data) {
-      const profile = data['profiles'] as Record<string, unknown> | null;
-      this.driverProfile = {
-        id: data['id'] as string,
-        displayName: (profile?.['display_name'] as string) ?? 'Chofer',
-        status: data['status'] as string
-      };
-      this.isAvailable = data['status'] === 'active';
+    if (!driverData) {
+      return;
     }
+
+    const profile = driverData['profiles'] as Record<string, unknown> | null;
+    const driverId = driverData['id'] as string;
+
+    const { data: presence } = await client
+      .from('driver_presence')
+      .select('is_online')
+      .eq('driver_id', driverId)
+      .single();
+
+    this.driverProfile = {
+      id: driverId,
+      displayName: (profile?.['display_name'] as string) ?? 'Chofer',
+      status: presence?.['is_online'] ? 'active' : 'paused'
+    };
+    this.isAvailable = presence?.['is_online'] ?? false;
   }
 
   private async loadRides(): Promise<void> {
@@ -160,16 +171,15 @@ export class DashboardPage implements OnInit {
 
   async toggleAvailability(event: unknown): Promise<void> {
     const ev = event as { detail: { checked: boolean } };
-    const userId = this.auth.userId;
-    const tenantId = this.auth.tenantId;
-    if (!userId || !tenantId || !this.driverProfile) {
+    if (!this.auth.userId || !this.auth.tenantId || !this.driverProfile) {
       return;
     }
 
-    const newStatus = ev.detail.checked ? 'active' : 'paused';
-    await this.driversRepo.setAvailability(this.driverProfile.id, newStatus as 'active' | 'paused');
+    const isOnline = ev.detail.checked;
+    const newStatus = isOnline ? 'active' : 'paused';
+    await this.driversRepo.setAvailability(this.driverProfile.id, newStatus as 'active' | 'paused', this.auth.tenantId);
     this.driverProfile.status = newStatus;
-    this.isAvailable = ev.detail.checked;
+    this.isAvailable = isOnline;
   }
 
   getStatusColor(status: string): string {

@@ -22,12 +22,11 @@ export class OperationsRepository {
   }
 
   async assignDriver(request: DriverAssignmentRequest) {
-    return this.supabase.rpc('assign_driver_to_ride', {
-      target_tenant_id: request.tenantId,
+    return this.supabase.rpc('transition_ride_state', {
       target_ride_request_id: request.rideRequestId,
-      target_driver_id: request.driverId,
-      target_vehicle_id: request.vehicleId ?? null,
-      actor_profile_id: request.actorId
+      new_status: 'driver_assigned',
+      actor_profile_id: null,
+      event_payload: { driver_id: request.driverId }
     });
   }
 }

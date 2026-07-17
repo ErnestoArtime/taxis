@@ -4,7 +4,12 @@ import { BookingRequest } from '@taxi/domain';
 export class BookingsRepository {
   constructor(private readonly supabase: SupabaseClient) {}
 
-  async createRequest(request: BookingRequest) {
+  async createRequest(request: BookingRequest & { estimatedPrice?: number }) {
+    const estimatedPrice = request.estimatedPrice
+      ?? (request.estimatedDistanceKm
+        ? Math.round((10 + request.estimatedDistanceKm * 5 + (request.estimatedDurationMinutes ?? 0) * 0.5) * 100) / 100
+        : null);
+
     return this.supabase.from('ride_requests').insert({
       tenant_id: request.tenantId,
       customer_id: request.customerId,
@@ -16,6 +21,16 @@ export class BookingsRepository {
       passenger_count: request.passengerCount,
       estimated_distance_km: request.estimatedDistanceKm,
       estimated_duration_minutes: request.estimatedDurationMinutes,
+      estimated_price: estimatedPrice,
+      price_snapshot: estimatedPrice ? JSON.stringify({
+        currency: 'CUP',
+        total: estimatedPrice,
+        subtotal: estimatedPrice,
+        parameters: {
+          distance_km: request.estimatedDistanceKm ?? 0,
+          duration_minutes: request.estimatedDurationMinutes ?? 0
+        }
+      }) : null,
       notes: request.notes,
       status: 'requested'
     }).select().single();

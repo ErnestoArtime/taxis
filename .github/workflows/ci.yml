@@ -49,11 +49,9 @@ jobs:
 
       - name: Check formatting
         run: npx prettier --check "packages/**/*.ts" "apps/*/src/**/*.ts" "*.json" "*.yaml"
-        continue-on-error: true
 
       - name: Lint
         run: npx eslint "packages/**/*.ts" "apps/*/src/**/*.ts" --max-warnings 0
-        continue-on-error: true
 
       - name: Typecheck
         run: pnpm typecheck
@@ -89,6 +87,3 @@ jobs:
 
       - name: Build applications
         run: pnpm build
-
-      - name: Deploy to staging (placeholder)
-        run: echo "Deploy to staging environment — configure your hosting provider here"

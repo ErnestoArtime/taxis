@@ -143,12 +143,15 @@ export class RideDetailPage implements OnInit, OnDestroy {
   async transition(newStatus: string): Promise<void> {
     if (!this.ride) return;
     const client = this.auth.client;
-    const userId = this.auth.userId;
+    const eventPayload: Record<string, unknown> = {};
+    if (newStatus === 'cancelled') {
+      eventPayload['cancellation_note'] = 'Cancelado por el chofer';
+    }
     const { error } = await client.rpc('transition_ride_state', {
       target_ride_request_id: this.ride.id,
       new_status: newStatus,
-      actor_profile_id: userId,
-      event_payload: {}
+      actor_profile_id: null,
+      event_payload: eventPayload
     });
 
     if (error) {

@@ -113,12 +113,10 @@ export class TaxiAuthService {
     }
 
     if (data.user) {
-      const { error: profileError } = await this.supabase.from('profiles').insert({
-        id: data.user.id,
-        tenant_id: tenantId,
-        role: 'customer',
+      const { error: profileError } = await this.supabase.rpc('register_customer_for_tenant', {
+        tenant_slug: tenantSlug,
         display_name: profile.displayName,
-        phone: profile.phone
+        phone: profile.phone ?? null
       });
 
       if (profileError) {

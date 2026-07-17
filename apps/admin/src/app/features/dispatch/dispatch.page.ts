@@ -7,9 +7,9 @@ import {
   IonTitle, IonToolbar, IonSegment, IonSegmentButton
 } from '@ionic/angular/standalone';
 import { TaxiAuthService } from '@taxi/auth';
-import { OperationsRepository, DriversRepository, NotificationsRepository } from '@taxi/supabase';
+import { OperationsRepository, DriversRepository } from '@taxi/supabase';
 import type { RideRequest } from '@taxi/domain';
-import { selectBestDriver, type NearbyDriver } from '@taxi/domain';
+import { type NearbyDriver } from '@taxi/domain';
 
 @Component({
   standalone: true,
@@ -114,7 +114,6 @@ export class DispatchPage implements OnInit {
   private auth = inject(TaxiAuthService);
   private operationsRepo = inject(OperationsRepository);
   private driversRepo = inject(DriversRepository);
-  private notificationsRepo = inject(NotificationsRepository);
 
   mode: 'manual' | 'auto' = 'manual';
   unassignedRides: RideRequest[] = [];
@@ -180,23 +179,6 @@ export class DispatchPage implements OnInit {
       return;
     }
 
-    const client = this.auth.client;
-    const { data: driverRecord } = await client
-      .from('drivers')
-      .select('profile_id')
-      .eq('id', this.selectedDriverId)
-      .single();
-
-    if (driverRecord) {
-      const selectedRide = this.unassignedRides.find(r => r.id === this.selectedRideId);
-      if (selectedRide) {
-        await this.notificationsRepo.notifyDriverAssigned(
-          tenantId, driverRecord['profile_id'] as string,
-          selectedRide.id, selectedRide.pickup_address
-        );
-      }
-    }
-
     this.loading = false;
     this.selectedRideId = '';
     this.selectedDriverId = '';
@@ -215,7 +197,7 @@ export class DispatchPage implements OnInit {
     const client = this.auth.client;
     const { data, error } = await client.rpc('auto_assign_driver', {
       target_ride_request_id: this.selectedRideId,
-      actor_profile_id: userId
+      actor_profile_id: null
     });
 
     this.autoLoading = false;

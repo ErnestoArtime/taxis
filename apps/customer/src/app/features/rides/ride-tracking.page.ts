@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgIf, NgFor } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
   IonBadge, IonButton, IonContent, IonHeader, IonItem, IonLabel,
   IonList, IonTextarea, IonTitle, IonToolbar, IonIcon
@@ -13,8 +14,8 @@ import { isOngoingStatus, canCancel } from '@taxi/domain';
 @Component({
   standalone: true,
   imports: [
-    DatePipe, IonBadge, IonButton, IonContent, IonHeader, IonItem,
-    IonLabel, IonList, IonTextarea, IonTitle, IonToolbar, IonIcon
+    DatePipe, NgIf, NgFor, FormsModule, IonBadge, IonButton, IonContent,
+    IonHeader, IonItem, IonLabel, IonList, IonTextarea, IonTitle, IonToolbar, IonIcon
   ],
   template: `
     <ion-header>
@@ -163,33 +164,22 @@ export class RideTrackingPage implements OnInit, OnDestroy {
   private async loadRide(id: string): Promise<void> {
     const client = this.auth.client;
     const { data } = await client
-      .from('ride_requests')
-      .select('*, drivers!inner(id, profile_id, vehicles(id, plate, make, model))')
+      .from('ride_customer_tracking')
+      .select('*')
       .eq('id', id)
       .single();
 
     if (data) {
       this.ride = data as unknown as RideRequest;
       if (data['driver_id']) {
-        const driver = data['drivers'] as Record<string, unknown> | undefined;
-        if (driver) {
-          const profile = await this.loadProfile(driver['profile_id'] as string);
-          const vehicle = driver['vehicles'] as Record<string, unknown> | undefined;
-          this.driverInfo = {
-            displayName: profile?.displayName ?? 'Chofer',
-            vehiclePlate: (vehicle?.['plate'] as string) ?? '',
-            vehicleMake: (vehicle?.['make'] as string) ?? '',
-            vehicleModel: (vehicle?.['model'] as string) ?? ''
-          };
-        }
+        this.driverInfo = {
+          displayName: (data['driver_display_name'] as string) ?? 'Chofer',
+          vehiclePlate: (data['vehicle_plate'] as string) ?? '',
+          vehicleMake: (data['vehicle_make'] as string) ?? '',
+          vehicleModel: (data['vehicle_model'] as string) ?? ''
+        };
       }
     }
-  }
-
-  private async loadProfile(profileId: string): Promise<{ displayName: string } | null> {
-    const client = this.auth.client;
-    const { data } = await client.from('profiles').select('display_name').eq('id', profileId).single();
-    return data ? { displayName: data['display_name'] as string } : null;
   }
 
   private subscribeToChanges(id: string): void {
@@ -209,12 +199,11 @@ export class RideTrackingPage implements OnInit, OnDestroy {
   async cancelRide(): Promise<void> {
     if (!this.ride) return;
     const client = this.auth.client;
-    const userId = this.auth.userId;
     await client.rpc('transition_ride_state', {
       target_ride_request_id: this.ride.id,
       new_status: 'cancelled',
-      actor_profile_id: userId,
-      event_payload: { reason: 'cancelado por cliente' }
+      actor_profile_id: null,
+      event_payload: { cancellation_note: 'Cancelado por el cliente' }
     });
     this.loadRide(this.ride.id);
   }
