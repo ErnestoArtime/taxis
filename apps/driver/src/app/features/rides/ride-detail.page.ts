@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { NgIf, NgFor } from '@angular/common';
 import { IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonTitle, IonToolbar } from '@ionic/angular/standalone';
 import { TaxiAuthService } from '@taxi/auth';
 import { subscribeToRide } from '@taxi/supabase';
@@ -9,7 +10,7 @@ import { getNextStates, isActiveStatus, canTransition } from '@taxi/domain';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonTitle, IonToolbar],
+  imports: [NgIf, NgFor, FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonLabel, IonList, IonTitle, IonToolbar],
   template: `
     <ion-header>
       <ion-toolbar>

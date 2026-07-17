@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgIf, NgFor } from '@angular/common';
 import {
   IonBadge,
   IonButton,
@@ -22,7 +22,7 @@ import type { RideRequest } from '@taxi/domain';
 @Component({
   standalone: true,
   imports: [
-    DatePipe,
+    DatePipe, NgIf, NgFor,
     IonBadge,
     IonButton,
     IonCard,

@@ -5,10 +5,10 @@ export class DriversRepository {
 
   async listAvailable(tenantId: string) {
     return this.supabase
-      .from('drivers')
-      .select('*, profiles(display_name, phone), vehicles(id, plate, make, model), driver_presence!left(is_online)')
+      .from('admin_available_drivers')
+      .select('*')
       .eq('tenant_id', tenantId)
-      .eq('status', 'active')
+      .eq('is_online', true)
       .order('rating', { ascending: false });
   }
 

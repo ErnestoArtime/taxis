@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgIf } from '@angular/common';
 import {
   IonButton,
   IonCheckbox,
@@ -17,7 +18,7 @@ import { TenantsRepository } from '@taxi/supabase';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonButton, IonCheckbox, IonContent, IonHeader, IonInput, IonItem, IonList, IonNote, IonTitle, IonToolbar],
+  imports: [NgIf, FormsModule, IonButton, IonCheckbox, IonContent, IonHeader, IonInput, IonItem, IonList, IonNote, IonTitle, IonToolbar],
   template: `
     <ion-header>
       <ion-toolbar>

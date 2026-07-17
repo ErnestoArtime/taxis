@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   IonButton,
@@ -15,7 +15,7 @@ import { TaxiAuthService } from '@taxi/auth';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonNote, IonTitle, IonToolbar],
+  imports: [FormsModule, RouterLink, IonButton, IonContent, IonHeader, IonInput, IonItem, IonNote, IonTitle, IonToolbar],
   template: `
     <ion-header>
       <ion-toolbar>
@@ -34,8 +34,12 @@ import { TaxiAuthService } from '@taxi/auth';
       <ion-button expand="block" (click)="login()" [disabled]="loading">
         {{ loading ? 'Entrando...' : 'Entrar' }}
       </ion-button>
+      <p class="register-link">¿No tienes cuenta? <a routerLink="/register">Registrate</a></p>
     </ion-content>
-  `
+  `,
+  styles: [`
+    .register-link { text-align: center; margin-top: 16px; }
+  `]
 })
 export class LoginPage {
   private auth = inject(TaxiAuthService);

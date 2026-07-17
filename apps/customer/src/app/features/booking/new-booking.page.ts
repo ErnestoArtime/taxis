@@ -64,6 +64,12 @@ import type { PriceEstimate } from '@taxi/domain';
             </ion-select-option>
           </ion-select>
         </ion-item>
+        <ion-item>
+          <ion-input label="Distancia aprox. (km)" labelPlacement="stacked" type="number" [(ngModel)]="distanceKm" (ionChange)="estimatePrice()" placeholder="0"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input label="Duracion aprox. (min)" labelPlacement="stacked" type="number" [(ngModel)]="durationMin" (ionChange)="estimatePrice()" placeholder="0"></ion-input>
+        </ion-item>
       </ion-list>
 
       <section class="estimate" *ngIf="estimate">
@@ -109,6 +115,8 @@ export class NewBookingPage implements OnInit {
   pickupAt = '';
   passengerCount = 1;
   vehicleClassId = '';
+  distanceKm: number | null = null;
+  durationMin: number | null = null;
   vehicleClasses: Array<{ id: string; name: string; seats: number }> = [];
   estimate: PriceEstimate | null = null;
   loading = false;
@@ -142,8 +150,8 @@ export class NewBookingPage implements OnInit {
     const { data } = await this.pricingRepo.estimate({
       tenantId,
       vehicleClassId: this.vehicleClassId || undefined,
-      distanceKm: undefined,
-      durationMinutes: undefined,
+      distanceKm: this.distanceKm ?? undefined,
+      durationMinutes: this.durationMin ?? undefined,
       pickupAt: this.pickupAt || new Date().toISOString()
     });
 
@@ -162,6 +170,7 @@ export class NewBookingPage implements OnInit {
     this.loading = true;
     this.error = '';
 
+    const estimatedPrice = this.estimate?.subtotal ?? undefined;
     const { data, error } = await this.bookingsRepo.createRequest({
       tenantId,
       customerId: userId,
@@ -170,6 +179,9 @@ export class NewBookingPage implements OnInit {
       dropoffAddress: this.dropoffAddress || undefined,
       pickupAt: this.pickupAt || new Date().toISOString(),
       passengerCount: this.passengerCount,
+      estimatedDistanceKm: this.distanceKm ?? undefined,
+      estimatedDurationMinutes: this.durationMin ?? undefined,
+      estimatedPrice,
       notes: `${this.pickupAddress} → ${this.dropoffAddress || 'Sin destino'}`
     });
 

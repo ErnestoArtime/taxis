@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, NgIf, NgFor } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   IonBadge, IonButton, IonContent, IonHeader, IonItem, IonLabel,
@@ -14,7 +14,7 @@ import { type NearbyDriver } from '@taxi/domain';
 @Component({
   standalone: true,
   imports: [
-    DatePipe, FormsModule, IonBadge, IonButton, IonContent, IonHeader,
+    DatePipe, NgIf, NgFor, FormsModule, IonBadge, IonButton, IonContent, IonHeader,
     IonItem, IonLabel, IonList, IonNote, IonRadio, IonRadioGroup,
     IonSelect, IonSelectOption, IonTitle, IonToolbar, IonSegment, IonSegmentButton
   ],
@@ -146,10 +146,9 @@ export class DispatchPage implements OnInit {
 
     if (driversResult.data) {
       this.availableDrivers = (driversResult.data as Array<Record<string, unknown>>).map(d => {
-        const profile = d['profiles'] as Record<string, unknown> | null;
         return {
-          id: d['id'] as string,
-          displayName: (profile?.['display_name'] as string) ?? 'Sin nombre',
+          id: d['driver_id'] as string,
+          displayName: (d['display_name'] as string) ?? 'Sin nombre',
           rating: d['rating'] as number
         };
       });

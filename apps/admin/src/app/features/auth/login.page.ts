@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { NgIf } from '@angular/common';
 import {
   IonButton,
   IonContent,
@@ -15,7 +16,7 @@ import { TaxiAuthService } from '@taxi/auth';
 
 @Component({
   standalone: true,
-  imports: [FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonNote, IonTitle, IonToolbar],
+  imports: [NgIf, FormsModule, IonButton, IonContent, IonHeader, IonInput, IonItem, IonNote, IonTitle, IonToolbar],
   template: `
     <ion-header>
       <ion-toolbar>

@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgIf, NgFor } from '@angular/common';
 import {
   IonBadge,
   IonButton,
@@ -28,6 +29,7 @@ interface TariffRule {
 @Component({
   standalone: true,
   imports: [
+    NgIf, NgFor,
     FormsModule,
     IonBadge,
     IonButton,
