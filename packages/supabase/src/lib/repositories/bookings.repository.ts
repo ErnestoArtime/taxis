@@ -19,7 +19,11 @@ export class BookingsRepository {
       p_vehicle_class_id: request.vehicleClassId ?? null,
       p_passenger_name: null,
       p_passenger_phone: null,
-      p_notes: request.notes ?? null
+      p_notes: request.notes ?? null,
+      p_pickup_lat: request.pickupLat ?? null,
+      p_pickup_lng: request.pickupLng ?? null,
+      p_dropoff_lat: request.dropoffLat ?? null,
+      p_dropoff_lng: request.dropoffLng ?? null
     });
   }
 

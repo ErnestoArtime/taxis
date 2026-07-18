@@ -17,6 +17,7 @@ import {
 } from '@ionic/angular/standalone';
 import { TaxiAuthService } from '@taxi/auth';
 import { BookingsRepository, PricingRepository } from '@taxi/supabase';
+import { NominatimMapProvider } from '@taxi/maps';
 import type { PriceEstimate } from '@taxi/domain';
 
 @Component({
@@ -109,6 +110,7 @@ export class NewBookingPage implements OnInit {
   private router = inject(Router);
   private bookingsRepo = inject(BookingsRepository);
   private pricingRepo = inject(PricingRepository);
+  private mapsProvider = new NominatimMapProvider();
 
   pickupAddress = '';
   dropoffAddress = '';
@@ -169,8 +171,36 @@ export class NewBookingPage implements OnInit {
 
     this.loading = true;
     this.error = '';
+    this.loading = true;
+    this.error = '';
 
-    const estimatedPrice = this.estimate?.subtotal ?? undefined;
+    const [pickupPlace, dropoffPlace] = await Promise.all([
+      this.pickupAddress ? this.mapsProvider.geocode(this.pickupAddress) : null,
+      this.dropoffAddress ? this.mapsProvider.geocode(this.dropoffAddress) : null
+    ]);
+
+    const pickupLat = pickupPlace?.coordinates.lat;
+    const pickupLng = pickupPlace?.coordinates.lng;
+    const dropoffLat = dropoffPlace?.coordinates.lat;
+    const dropoffLng = dropoffPlace?.coordinates.lng;
+
+    let distanceKm = this.distanceKm ?? undefined;
+    let durationMin = this.durationMin ?? undefined;
+
+    if (!distanceKm && pickupPlace?.coordinates && dropoffPlace?.coordinates) {
+      distanceKm = await this.mapsProvider.getDistanceKm(
+        pickupPlace.coordinates,
+        dropoffPlace.coordinates
+      );
+      durationMin = await this.mapsProvider.getDurationMinutes(
+        pickupPlace.coordinates,
+        dropoffPlace.coordinates
+      );
+    }
+
+    const estimatedPrice = this.estimate?.subtotal
+      ?? (distanceKm ? Math.round((10 + distanceKm * 5 + (durationMin ?? 0) * 0.5) * 100) / 100 : undefined);
+
     const { data, error } = await this.bookingsRepo.createRequest({
       tenantId,
       customerId: userId,
@@ -179,9 +209,13 @@ export class NewBookingPage implements OnInit {
       dropoffAddress: this.dropoffAddress || undefined,
       pickupAt: this.pickupAt || new Date().toISOString(),
       passengerCount: this.passengerCount,
-      estimatedDistanceKm: this.distanceKm ?? undefined,
-      estimatedDurationMinutes: this.durationMin ?? undefined,
+      estimatedDistanceKm: distanceKm,
+      estimatedDurationMinutes: durationMin,
       estimatedPrice,
+      pickupLat,
+      pickupLng,
+      dropoffLat,
+      dropoffLng,
       notes: `${this.pickupAddress} → ${this.dropoffAddress || 'Sin destino'}`
     });
 

@@ -151,6 +151,81 @@ where d.status = 'active';
 
 grant select on public.admin_available_drivers to authenticated;
 
+-- ─── 6. Update create_ride_request RPC with coordinate support ───────────────
+
+drop function if exists public.create_ride_request(
+  uuid, uuid, text, text, timestamptz, integer,
+  numeric, numeric, numeric, uuid, uuid, text, text, text
+);
+
+create or replace function public.create_ride_request(
+  p_tenant_id uuid,
+  p_customer_id uuid,
+  p_pickup_address text,
+  p_dropoff_address text default null,
+  p_pickup_at timestamptz default now(),
+  p_passenger_count integer default 1,
+  p_estimated_distance_km numeric default null,
+  p_estimated_duration_minutes numeric default null,
+  p_estimated_price numeric default null,
+  p_service_area_id uuid default null,
+  p_vehicle_class_id uuid default null,
+  p_passenger_name text default null,
+  p_passenger_phone text default null,
+  p_notes text default null,
+  p_pickup_lat numeric default null,
+  p_pickup_lng numeric default null,
+  p_dropoff_lat numeric default null,
+  p_dropoff_lng numeric default null
+)
+returns public.ride_requests
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_ride public.ride_requests;
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  insert into public.ride_requests (
+    tenant_id, customer_id, pickup_address, dropoff_address,
+    pickup_at, passenger_count, estimated_distance_km, estimated_duration_minutes,
+    estimated_price, service_area_id, vehicle_class_id,
+    passenger_name, passenger_phone, notes,
+    pickup_lat, pickup_lng, dropoff_lat, dropoff_lng,
+    status
+  ) values (
+    p_tenant_id, p_customer_id, p_pickup_address, p_dropoff_address,
+    p_pickup_at, p_passenger_count, p_estimated_distance_km, p_estimated_duration_minutes,
+    p_estimated_price, p_service_area_id, p_vehicle_class_id,
+    p_passenger_name, p_passenger_phone, p_notes,
+    p_pickup_lat, p_pickup_lng, p_dropoff_lat, p_dropoff_lng,
+    'requested'
+  )
+  returning * into new_ride;
+
+  insert into public.ride_events (tenant_id, ride_request_id, actor_id, event_type, payload)
+  values (new_ride.tenant_id, new_ride.id, p_customer_id, 'requested', jsonb_build_object(
+    'pickup_lat', p_pickup_lat, 'pickup_lng', p_pickup_lng,
+    'dropoff_lat', p_dropoff_lat, 'dropoff_lng', p_dropoff_lng
+  ));
+
+  return new_ride;
+end;
+$$;
+
+grant execute on function public.create_ride_request(
+  uuid, uuid, text, text, timestamptz, integer,
+  numeric, numeric, numeric, uuid, uuid, text, text, text,
+  numeric, numeric, numeric, numeric
+) to authenticated;
+
+-- ─── 7. Update BookingsRepository's createRequest also maps pickuplat etc. ──
+-- (handled in TypeScript)
+
 -- Grants
 grant insert on public.ride_assignments to authenticated;
 grant insert on public.ride_events to authenticated;

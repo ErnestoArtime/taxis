@@ -10,12 +10,14 @@ import { TaxiAuthService } from '@taxi/auth';
 import { subscribeToRide } from '@taxi/supabase';
 import type { RideRequest } from '@taxi/domain';
 import { isOngoingStatus, canCancel } from '@taxi/domain';
+import { MapViewComponent } from '../../shared/map-view/map-view.component';
 
 @Component({
   standalone: true,
   imports: [
-    DatePipe, NgIf, NgFor, FormsModule, IonBadge, IonButton, IonContent,
-    IonHeader, IonItem, IonLabel, IonList, IonTextarea, IonTitle, IonToolbar, IonIcon
+    DatePipe, NgIf, NgFor, FormsModule, MapViewComponent,
+    IonBadge, IonButton, IonContent, IonHeader, IonItem, IonLabel,
+    IonList, IonTextarea, IonTitle, IonToolbar, IonIcon
   ],
   template: `
     <ion-header>
@@ -24,12 +26,12 @@ import { isOngoingStatus, canCancel } from '@taxi/domain';
       </ion-toolbar>
     </ion-header>
     <ion-content class="ion-padding">
-      <section class="map-shell">
-        <div class="route-line"></div>
-        <span class="pin pickup"></span>
-        <span class="pin dropoff"></span>
-        <span class="car" *ngIf="ride && isOngoing(ride.status)">Taxi</span>
-      </section>
+      <app-map-view
+        [originAddress]="ride?.pickup_address ?? ''"
+        [destinationAddress]="ride?.dropoff_address ?? ''"
+        [interactive]="false"
+        [zoom]="13"
+      ></app-map-view>
 
       <section class="status-banner" *ngIf="ride" [class]="'status-' + ride.status">
         <strong>{{ statusLabel }}</strong>
@@ -97,29 +99,6 @@ import { isOngoingStatus, canCancel } from '@taxi/domain';
     </ion-content>
   `,
   styles: [`
-    .map-shell {
-      position: relative; min-height: 220px; margin-bottom: 16px;
-      overflow: hidden; border-radius: 8px;
-      background:
-        linear-gradient(90deg, rgba(15, 118, 110, 0.12) 1px, transparent 1px),
-        linear-gradient(rgba(15, 118, 110, 0.12) 1px, transparent 1px), #f8fafc;
-      background-size: 32px 32px;
-    }
-    .route-line {
-      position: absolute; inset: 62px 58px 72px 48px;
-      border: 4px solid var(--ion-color-primary);
-      border-left: 0; border-bottom: 0; border-radius: 0 42px 0 0;
-    }
-    .pin, .car {
-      position: absolute; display: grid; place-items: center;
-      width: 42px; height: 42px; border-radius: 50%; font-size: 12px; font-weight: 700;
-    }
-    .pickup { left: 32px; bottom: 48px; background: var(--ion-color-secondary); }
-    .dropoff { right: 44px; top: 42px; background: var(--ion-color-primary); }
-    .car {
-      right: 112px; top: 52px; width: 54px; border-radius: 999px;
-      background: #111827; color: #fff;
-    }
     .status-banner {
       padding: 12px 16px; border-radius: 8px; margin-bottom: 12px;
     }
