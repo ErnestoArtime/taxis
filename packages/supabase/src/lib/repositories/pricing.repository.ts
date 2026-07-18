@@ -31,4 +31,28 @@ export class PricingRepository {
       pickup_at: request.pickupAt
     });
   }
+
+  async upsertRule(rule: Record<string, unknown>) {
+    return this.supabase.from('tariff_rules').upsert(rule, { onConflict: 'id' }).select().single();
+  }
+
+  async deleteRule(ruleId: string) {
+    return this.supabase.from('tariff_rules').delete().eq('id', ruleId);
+  }
+
+  async listAllVehicleClasses(tenantId: string) {
+    return this.supabase
+      .from('vehicle_classes')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('sort_order');
+  }
+
+  async upsertVehicleClass(vc: Record<string, unknown>) {
+    return this.supabase.from('vehicle_classes').upsert(vc, { onConflict: 'id' }).select().single();
+  }
+
+  async deleteVehicleClass(vcId: string) {
+    return this.supabase.from('vehicle_classes').delete().eq('id', vcId);
+  }
 }

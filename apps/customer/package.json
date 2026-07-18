@@ -17,6 +17,9 @@
     "@ionic/angular": "^8.0.0",
     "@supabase/supabase-js": "^2.0.0",
     "@taxi/auth": "workspace:*",
+    "@taxi/domain": "workspace:*",
+    "@taxi/maps": "workspace:*",
+    "@taxi/supabase": "workspace:*",
     "rxjs": "^7.8.0"
   }
 }
